@@ -6,7 +6,13 @@
 import Diagnostics from '@/components/Diagnostics';
 import {KeyIllustration} from '@/components/Illustrations';
 import {useSettings} from '@/context';
-import {haptic, isTelegram, notify, openExternal} from '@/lib/telegram';
+import {
+  haptic,
+  isTelegram,
+  notify,
+  openExternal,
+  openTelegram,
+} from '@/lib/telegram';
 import {validateApiKey} from '@/lib/textGeneration';
 import {useState} from 'react';
 
@@ -14,6 +20,9 @@ const AI_STUDIO_URL = 'https://aistudio.google.com/apikey';
 
 /** A walkthrough of getting a key, for anyone who has never seen one. */
 const KEY_GUIDE_URL = 'https://youtu.be/yZN5a12CZD8?si=EPbQLdrQY2d2-xQm';
+
+/** The author's channel, credited on this screen in both its roles. */
+const CHANNEL_URL = 'https://t.me/mukhtorov_md';
 
 interface KeyGateProps {
   /** Rendered as a dismissable settings screen rather than a first-run gate. */
@@ -163,6 +172,19 @@ export default function KeyGate({onClose, onSaved, pending}: KeyGateProps) {
               {t.trouble}
             </button>
           ))}
+
+        <p className="key-credit">
+          {t.credit}{' '}
+          <button
+            type="button"
+            className="credit-link"
+            onClick={() => {
+              haptic();
+              openTelegram(CHANNEL_URL);
+            }}>
+            {t.creditName}
+          </button>
+        </p>
       </div>
 
       <style>{`
@@ -260,6 +282,28 @@ export default function KeyGate({onClose, onSaved, pending}: KeyGateProps) {
           display: flex;
           gap: 0.5rem;
           justify-content: space-between;
+        }
+
+        .key-credit {
+          border-top: 1px solid var(--color-border);
+          color: var(--color-hint);
+          font-size: 0.8rem;
+          margin-top: 0.4rem;
+          padding-top: 0.9rem;
+          text-align: center;
+        }
+
+        /* A button, because Telegram blocks a plain anchor out of the webview,
+           dressed as the link it reads as. */
+        .credit-link {
+          background: none;
+          color: var(--color-brand);
+          font: inherit;
+          font-weight: 600;
+          min-height: auto;
+          padding: 0;
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
       `}</style>
     </div>

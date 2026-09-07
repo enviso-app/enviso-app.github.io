@@ -289,6 +289,18 @@ export function openExternal(url: string) {
   else globalThis.open?.(url, '_blank', 'noopener');
 }
 
+/**
+ * Open a t.me address inside Telegram itself.
+ *
+ * openLink would put the channel's *web* page in a webview, which asks the
+ * reader to log in again to do anything. openTelegramLink hands the address to
+ * the client, so a channel opens as a channel.
+ */
+export function openTelegram(url: string) {
+  if (tg?.openTelegramLink) tg.openTelegramLink(url);
+  else openExternal(url);
+}
+
 /** The user's Telegram interface language, e.g. 'uz', 'en', 'ru'. */
 export function telegramLanguage(): string | undefined {
   return tg?.initDataUnsafe?.user?.language_code;

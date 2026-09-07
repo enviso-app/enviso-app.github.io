@@ -210,6 +210,10 @@ export const strings = {
   settings: 'Settings',
   back: 'Back',
   done: 'Done',
+
+  /* Split so the surname can be the link and the rest cannot. */
+  credit: 'designed by',
+  creditName: 'mukhtorov',
 };
 
 export type Strings = typeof strings;
