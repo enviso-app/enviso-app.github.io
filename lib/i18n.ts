@@ -217,6 +217,9 @@ export const strings = {
   /* Split so the surname can be the link and the rest cannot. */
   credit: 'designed by',
   creditName: 'mukhtorov',
+
+  adFrom: 'From the channel',
+  adDismiss: 'Dismiss',
 };
 
 export type Strings = typeof strings;

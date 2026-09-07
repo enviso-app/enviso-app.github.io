@@ -26,3 +26,7 @@ dist-ssr
 # Local secrets (the app now asks each user for their own key)
 .env
 .env.local
+
+# Written by tools/fetch-announcement.mjs on each build, like other build
+# output. Committing it would mean a card could only change via a developer.
+public/announcement.json

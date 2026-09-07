@@ -11,6 +11,7 @@ import {
   EmptyIllustration,
   PaperIllustration,
 } from '@/components/Illustrations';
+import AnnouncementCard from '@/components/AnnouncementCard';
 import KeyGate from '@/components/KeyGate';
 import {useSettings} from '@/context';
 import {lookupPaper} from '@/lib/paperLookup';
@@ -409,6 +410,7 @@ export default function App() {
     return (
       <div className="app">
         {header}
+        <AnnouncementCard />
         <Chooser onChoose={setMode} />
         <HistoryList
           items={history}
@@ -423,6 +425,8 @@ export default function App() {
   return (
     <div className="app app-main">
       {header}
+
+      <AnnouncementCard />
 
       <nav className="mode-switch" role="tablist">
         {(['video', 'paper', 'diagram'] as const).map((option) => (
@@ -961,18 +965,23 @@ function Styles() {
           gap: 1.25rem 1.75rem;
           grid-template-areas:
             'brand output'
+            'promo output'
             'modes output'
             'form output'
             'media output'
             'past output';
           grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
-          grid-template-rows: auto auto auto auto 1fr;
+          grid-template-rows: auto auto auto auto auto 1fr;
           max-width: 1320px;
           min-height: var(--tg-viewport-height, 100dvh);
         }
 
         .app-main .header {
           grid-area: brand;
+        }
+
+        .app-main .ad {
+          grid-area: promo;
         }
 
         .app-main .mode-switch {

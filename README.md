@@ -204,6 +204,63 @@ knows it better than a model that watched it once.
   BackButton leaves the settings screen; both fall back to in-page controls
   outside Telegram.
 
+## Announcing something in the app
+
+Post it on the channel with **`#enviso`** in the text. Within about half an
+hour it shows as a card at the top of the home screen, linking back to the
+post.
+
+    Pictures now work 🖼 #enviso
+    Upload a sketch and Enviso builds the app it implies.
+
+The first line becomes the card's title, the rest becomes the body, and the
+post's photo becomes the thumbnail. The `#enviso` tag itself is stripped from
+what people see, so it can sit on its own line if you prefer.
+
+**To change it** -- post a newer `#enviso` message. The most recent one always
+wins.
+
+**To take it down** -- delete the post, or wait: a card stops showing 10 days
+after it was posted, so a forgotten announcement cannot sit in the app
+forever. Each person can also dismiss it, and a dismissed card stays gone
+until you post a new one.
+
+**How it works.** A scheduled GitHub Action reads the channel's public page
+(`t.me/s/mukhtorov_md` -- the same one anyone can open, no bot token involved),
+finds the newest tagged post, and writes `public/announcement.json` as part of
+the normal build. The app fetches that file at runtime, cache-busted by the
+hour so a new card never forces anyone to re-download the app. Nothing needs a
+server, and it costs nothing: Actions minutes are free on public repositories.
+
+The Bot API would have been the obvious route and is deliberately not used. It
+needs the bot token, and the only place a static site could keep a token is in
+the page, where anyone could take the bot.
+
+**Three things worth knowing:**
+
+- It is not instant. The timer runs every 30 minutes and the deploy takes
+  about a minute, so allow up to an hour. To publish immediately, open the
+  repository's **Actions** tab, pick **Deploy to GitHub Pages**, and press
+  **Run workflow**.
+- **GitHub switches off scheduled workflows after 60 days without a push to
+  the repository.** You get an email when it happens, and any push -- or the
+  "Enable workflow" button on the Actions tab -- turns them back on. If cards
+  ever stop updating, check this first.
+- Only public channels can be read this way, and only the recent posts on the
+  channel page are considered.
+
+To see what would be published without publishing anything:
+
+```bash
+npm run announcement -- --dry
+npm run announcement -- --tag=AI --dry   # try the parser on another tag
+```
+
+To follow a different tag or change the 10-day window, edit `TAG` and
+`MAX_AGE_DAYS` at the top of `tools/fetch-announcement.mjs`. The window also
+lives in `lib/announcement.ts`, because a deploy can sit unchanged for months
+and a stale card must still expire; `npm test` fails if the two disagree.
+
 ## Develop
 
 ```bash

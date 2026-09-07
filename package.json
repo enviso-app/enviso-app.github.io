@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "announcement": "node tools/fetch-announcement.mjs",
+    "test": "node tools/announcement.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
