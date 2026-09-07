@@ -107,8 +107,11 @@ export const strings = {
   diagramNeedFile: 'Choose an image or a PDF first',
   diagramTooBig: 'That file is too large. The limit is 12 MB.',
   diagramUnreadable: 'That file could not be read. Try another.',
-  diagramLimits: 'PNG, JPG, WEBP or PDF, up to {size} MB',
-  diagramWrongType: 'That needs to be an image or a PDF',
+  diagramLimits: 'PNG, JPG, WEBP, HEIC or PDF, up to {size} MB',
+  /* Naming the formats matters now the check is strict: a refused GIF should
+     say which formats would have worked, not just that this one did not. */
+  diagramWrongType:
+    'That format cannot be read. Use a PNG, JPG, WEBP, HEIC or PDF.',
   diagramPlaceholderText: 'Your app will appear here',
   diagramStep1: 'Upload a sketch, screenshot, diagram or photo',
   diagramStep2: 'Gemini works out what it implies and designs an app',

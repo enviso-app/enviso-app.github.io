@@ -9,8 +9,36 @@ export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 /** The cap in whole megabytes, for anything that has to say it out loud. */
 export const MAX_UPLOAD_MB = Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024));
 
-/** What a diagram may be: anything Gemini can look at. */
-export const DIAGRAM_ACCEPT = 'image/*,application/pdf,.pdf';
+/**
+ * The image types Gemini actually accepts, and nothing else.
+ *
+ * The API takes exactly PNG, JPEG, WEBP, HEIC and HEIF. GIF, SVG, BMP and
+ * TIFF are not on that list, and `image/*` waved all of them through -- so
+ * exporting a flowchart as SVG, an ordinary thing to do, was accepted here
+ * and refused at the far end of an upload as a raw API error. A format we
+ * cannot use has to be refused at the moment it is picked, in a sentence.
+ */
+const PICTURE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
+
+/** What a diagram may be, stated so the picker can filter on it too. */
+export const DIAGRAM_ACCEPT = [
+  ...PICTURE_TYPES,
+  'application/pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.jfif',
+  '.webp',
+  '.heic',
+  '.heif',
+  '.pdf',
+].join(',');
 
 /**
  * Extensions we accept when the browser reports no type at all.
@@ -18,13 +46,13 @@ export const DIAGRAM_ACCEPT = 'image/*,application/pdf,.pdf';
  * A file picked from an unusual source, or with an extension Windows does
  * not recognise, arrives with an empty `type`. Judging on that alone would
  * refuse a perfectly good photograph for a reason the person cannot see or
- * fix, so the name gets the second word.
+ * fix, so the name gets the second word. It lists only what the API takes.
  */
-const PICTURE_EXTENSION = /\.(png|jpe?g|jfif|webp|gif|bmp|heic|heif|avif|svg|tiff?|pdf)$/i;
+const PICTURE_EXTENSION = /\.(png|jpe?g|jfif|webp|heic|heif|pdf)$/i;
 
 /** True for a file that can be handed to Gemini as a picture. */
 export function isPictureFile(file: File): boolean {
-  if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+  if (PICTURE_TYPES.includes(file.type) || file.type === 'application/pdf') {
     return true;
   }
   return file.type === '' && PICTURE_EXTENSION.test(file.name);
@@ -83,6 +111,34 @@ export function sourceLabel(source: Source): string {
 }
 
 /**
+ * What to call a file the browser would not name.
+ *
+ * `file.type || 'application/pdf'` was written for the PDF upload, and on the
+ * picture path it contradicted the check above: isPictureFile goes out of its
+ * way to accept an image whose type is empty, and then the image was sent to
+ * Gemini declared as a PDF. The extension already told us what it is.
+ */
+const EXTENSION_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  jfif: 'image/jpeg',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  pdf: 'application/pdf',
+};
+
+function inferMimeType(file: File): string {
+  // Some systems report a spelling the API does not know.
+  if (file.type === 'image/jpg') return 'image/jpeg';
+  if (file.type) return file.type;
+
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return EXTENSION_TYPES[extension] ?? 'application/pdf';
+}
+
+/**
  * Read a picked file as base64.
  *
  * The result is inlined into the request rather than uploaded, which avoids
@@ -106,7 +162,7 @@ export function readFileAsBase64(
       }
       resolve({
         name: file.name,
-        mimeType: file.type || 'application/pdf',
+        mimeType: inferMimeType(file),
         base64: result.slice(comma + 1),
       });
     };
