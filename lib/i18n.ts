@@ -193,7 +193,8 @@ export const strings = {
   keyStep1: 'Open Google AI Studio and create a key',
   keyStep2: 'Paste it below',
   keyGet: 'Get a free key',
-  keyWatch: 'Watch how (2 min)',
+  // Non-breaking: it wrapped as "Watch how (2" / "min)" on a phone.
+  keyWatch: 'Watch how (2 min)',
   keyPlaceholder: 'AIza...',
   keySave: 'Save key',
   keyChecking: 'Checking key...',
