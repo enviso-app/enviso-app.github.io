@@ -7,8 +7,12 @@ on:
   # Rebuild on a timer so a newly tagged channel post reaches the app without
   # anyone touching the repository. GitHub disables scheduled workflows after
   # 60 days of repository inactivity -- any push re-enables them.
+  #
+  # Off the hour and half-hour on purpose. Every repository's "*/30" fires at
+  # :00 and :30, GitHub sheds load by dropping scheduled runs, and in practice
+  # "*/30" ran every four to five hours. Quiet minutes are dropped less.
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '7,37 * * * *'
 
 permissions:
   contents: read

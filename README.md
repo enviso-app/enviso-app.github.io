@@ -206,9 +206,10 @@ knows it better than a model that watched it once.
 
 ## Announcing something in the app
 
-Post it on the channel with **`#enviso`** in the text. Within about half an
-hour it shows as a card at the top of the home screen, linking back to the
-post.
+Post it on the channel with **`#enviso`** in the text. On the next scheduled
+build it shows as a card at the top of the home screen, linking back to the
+post. That is usually within a few hours -- or within a minute if you press
+**Run workflow** (below).
 
     Pictures now work 🖼 #enviso
     Upload a sketch and Enviso builds the app it implies.
@@ -238,10 +239,13 @@ the page, where anyone could take the bot.
 
 **Three things worth knowing:**
 
-- It is not instant. The timer runs every 30 minutes and the deploy takes
-  about a minute, so allow up to an hour. To publish immediately, open the
+- **It is not instant, and GitHub's timer is not reliable.** The schedule asks
+  for a build twice an hour, but GitHub delays and drops scheduled runs when
+  it is busy: measured over sixty runs in September 2026 the real gap was
+  about four and a half hours, and up to nine. To publish immediately, open the
   repository's **Actions** tab, pick **Deploy to GitHub Pages**, and press
-  **Run workflow**.
+  **Run workflow** -- the card is live about a minute later. Deleting a post
+  takes effect on the same schedule.
 - **GitHub switches off scheduled workflows after 60 days without a push to
   the repository.** You get an email when it happens, and any push -- or the
   "Enable workflow" button on the Actions tab -- turns them back on. If cards

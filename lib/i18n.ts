@@ -25,7 +25,6 @@ export const strings = {
   validating: 'Checking link...',
   generating: 'Generating...',
   regenerate: 'Generate again',
-  videoPlaceholder: 'Your video appears here',
   contentPlaceholder: 'Your learning app will appear here',
   introStep1: 'Paste a link to a short YouTube lesson',
   introStep2: 'Gemini watches it and designs an app around its main idea',
@@ -40,6 +39,8 @@ export const strings = {
   reqSpeech: 'Someone explaining something, not music or ambient sound',
   reqPaperAccess: 'Open access, or upload the PDF',
   reqPaperLanguage: 'Written in English',
+  reqPictureWhat: 'A sketch, screenshot, diagram, form or photo',
+  reqPictureClear: 'Clear enough to make out what is in it',
 
   rejectTitle: 'This video will not work',
   rejectWhy: 'It said:',

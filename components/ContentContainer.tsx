@@ -129,12 +129,33 @@ export default function ContentContainer({
   const startedRef = useRef(false);
   // Set when the user overrules a refusal, so the next run does not repeat it.
   const overrideRef = useRef(false);
+  // False once this view is gone. A generation the user walked away from must
+  // stop spending their quota at the next step, and must not land in history.
+  const aliveRef = useRef(true);
+  // The summary as it is now, not as it was when runGeneration was created.
+  // runGeneration is made on the first render, so reading summary state from
+  // inside it saw the empty value and saved every app under its raw URL.
+  const summaryRef = useRef(summary);
+  summaryRef.current = summary;
 
   useEffect(() => {
     onLoadingStateChange?.(
       loadingState === 'loading-spec' || loadingState === 'loading-code',
     );
   }, [loadingState, onLoadingStateChange]);
+
+  /*
+   * Leaving mid-generation -- switching mode, opening another app -- used to
+   * leave the page reporting "Generating..." forever, with the input and the
+   * button both disabled until a reload. Unmounting always reports idle.
+   */
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      onLoadingStateChange?.(false);
+    };
+  }, []);
 
   /**
    * Build the screening request for whichever source we were given.
@@ -274,7 +295,9 @@ export default function ContentContainer({
     identityRef.current = screening.identity ?? '';
     planRef.current = planSections(screening.sections, source.kind);
 
-    setSummary({text: screening.summaryEn, title: screening.title});
+    const nextSummary = {text: screening.summaryEn, title: screening.title};
+    summaryRef.current = nextSummary;
+    setSummary(nextSummary);
 
     return screening.spec;
   }, [
@@ -366,6 +389,7 @@ export default function ContentContainer({
 
       const worker = async () => {
         for (let i = next++; i < jobs.length; i = next++) {
+          if (!aliveRef.current) return;
           const job = jobs[i];
 
           if (job.kind === 'shell') {
@@ -446,10 +470,14 @@ export default function ContentContainer({
       setStreamed('');
 
       const generatedSpec = await generateSpecFromSource();
+      // Gone while the plan was being written: the build is the expensive
+      // half, so do not start it for nobody.
+      if (!aliveRef.current) return;
       setSpec(generatedSpec);
       setLoadingState('loading-code');
 
       const generatedCode = await generateCodeFromSpec(generatedSpec);
+      if (!aliveRef.current) return;
       setCode(generatedCode);
       setStreamed('');
       setLoadingState('ready');
@@ -520,12 +548,12 @@ export default function ContentContainer({
       sourceUrl,
       spec: finalSpec,
       code: finalCode,
-      summary: summary.text,
+      summary: summaryRef.current.text,
     });
   };
 
   const summaryTitle = () =>
-    summary.title?.trim() ||
+    summaryRef.current.title?.trim() ||
     (source.kind === 'video'
       ? source.url
       : source.kind === 'diagram'
@@ -644,6 +672,7 @@ ${t.shareFooter} ${home}`
       setStreamed('');
       setLoadingState('ready');
       notify('success');
+      void remember(trimmed, generatedCode);
     } catch (err) {
       console.error('Rebuild failed:', err);
       setError(err instanceof Error ? err.message : String(err));

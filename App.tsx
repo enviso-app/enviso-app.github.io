@@ -320,6 +320,20 @@ export default function App() {
     setReloadCounter((c) => c + 1);
   };
 
+  /*
+   * Put the source's link in the field whenever one is loaded from elsewhere.
+   *
+   * A shared link and a reopened app both set the source without typing it,
+   * and the field is only rendered once a key and a mode exist -- so it stayed
+   * empty, and "Generate again" focused a blank input and silently did
+   * nothing.
+   */
+  useEffect(() => {
+    const field = inputRef.current;
+    if (!field || field.value || !source || !('url' in source)) return;
+    field.value = source.url;
+  }, [source, mode, apiKey]);
+
   const start = (next: Source) => {
     setRestored(null);
     setSource(next);
@@ -392,38 +406,53 @@ export default function App() {
 
   // The key comes first: nothing here works without one, and asking later
   // meant a new user met a demand instead of the app.
-  if (!apiKey || panelOpen) {
+  if (!apiKey) {
     return (
       <div className="app">
         {header}
-        <KeyGate
-          key={apiKey ? 'settings' : 'onboarding'}
-          onClose={apiKey ? closePanel : undefined}
-          onSaved={apiKey ? closePanel : undefined}
-        />
+        <KeyGate key="onboarding" />
         <Styles />
       </div>
     );
   }
 
+  /*
+   * Settings sits on top of the home screen rather than replacing it.
+   *
+   * Replacing it unmounted the generator, and coming back mounted a fresh one
+   * -- which started the whole generation again. Every visit to Settings cost
+   * a finished app's worth of the user's daily quota, eight calls for a paper.
+   */
+  const settings = panelOpen && (
+    <div className="app">
+      {header}
+      <KeyGate key="settings" onClose={closePanel} onSaved={closePanel} />
+    </div>
+  );
+
   if (!mode) {
     return (
-      <div className="app">
-        {header}
-        <AnnouncementCard />
-        <Chooser onChoose={setMode} />
-        <HistoryList
-          items={history}
-          onOpen={openFromHistory}
-          onChanged={refreshHistory}
-        />
+      <>
+        {settings}
+        <div className="app" hidden={panelOpen}>
+          {header}
+          <AnnouncementCard />
+          <Chooser onChoose={setMode} />
+          <HistoryList
+            items={history}
+            onOpen={openFromHistory}
+            onChanged={refreshHistory}
+          />
+        </div>
         <Styles />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="app app-main">
+    <>
+    {settings}
+    <div className="app app-main" hidden={panelOpen}>
       {header}
 
       <AnnouncementCard />
@@ -543,7 +572,9 @@ export default function App() {
             <ul className="requirements-list">
               {(mode === 'video'
                 ? [t.reqDuration, t.reqLanguage, t.reqSpeech]
-                : [t.reqPaperAccess, t.reqPaperLanguage]
+                : mode === 'diagram'
+                  ? [t.reqPictureWhat, t.reqPictureClear]
+                  : [t.reqPaperAccess, t.reqPaperLanguage]
               ).map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -561,19 +592,18 @@ export default function App() {
         )}
       </section>
 
-      {mode === 'video' && (
+      {/* Only once there is a video. An empty 16:9 box above an empty output
+          box filled a phone screen with two placeholders before the user had
+          done anything. */}
+      {mode === 'video' && videoUrl && (
         <section className="video">
-          {videoUrl ? (
-            <iframe
-              className="video-frame"
-              src={getYoutubeEmbedUrl(videoUrl)}
-              title="source-video"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <div className="video-placeholder hint">{t.videoPlaceholder}</div>
-          )}
+          <iframe
+            className="video-frame"
+            src={getYoutubeEmbedUrl(videoUrl)}
+            title="source-video"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </section>
       )}
 
@@ -629,9 +659,9 @@ export default function App() {
         onOpen={openFromHistory}
         onChanged={refreshHistory}
       />
-
-      <Styles />
     </div>
+    <Styles />
+    </>
   );
 }
 
@@ -643,6 +673,11 @@ function Styles() {
        * otherwise. Telegram's own header overlays the page on some platforms,
        * so content placed under it would simply be unreachable.
        */
+      /* The attribute alone loses to display:flex below. */
+      .app[hidden] {
+        display: none !important;
+      }
+
       .app {
         display: flex;
         flex-direction: column;
@@ -820,7 +855,7 @@ function Styles() {
          items in a list. */
       .requirements-list li::before {
         color: var(--color-brand);
-        content: '¹3';
+        content: '\\2713';
         flex: 0 0 auto;
         font-weight: 700;
       }
@@ -857,20 +892,13 @@ function Styles() {
         width: 100%;
       }
 
-      .video-frame,
-      .video-placeholder {
+      .video-frame {
         border: none;
         height: 100%;
         left: 0;
         position: absolute;
         top: 0;
         width: 100%;
-      }
-
-      .video-placeholder {
-        align-items: center;
-        display: flex;
-        justify-content: center;
       }
 
       .output {
