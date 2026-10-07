@@ -4,7 +4,6 @@
  */
 
 import Chooser from '@/components/Chooser';
-import ContentContainer from '@/components/ContentContainer';
 import HistoryList from '@/components/HistoryList';
 import {
   DiagramIllustration,
@@ -38,12 +37,38 @@ import {
   showBackButton,
   startParam,
 } from '@/lib/telegram';
+import {prefetchSdk} from '@/lib/textGeneration';
 import {
   getVideoDurationSeconds,
   getYoutubeEmbedUrl,
   validateYoutubeUrl,
 } from '@/lib/youtube';
-import {useEffect, useRef, useState} from 'react';
+import {Suspense, lazy, useEffect, useRef, useState} from 'react';
+
+/*
+ * The generator, with every prompt the app sends, is fetched on demand.
+ *
+ * Those prompts are long, and with the Gemini SDK they were most of what a
+ * first open in Telegram downloaded -- for a home screen that needs none of it.
+ */
+const loadContentContainer = () =>
+  import('@/components/ContentContainer').catch((error) => {
+    /*
+     * A deploy while the page was open renames the file this asks for, and
+     * the old name is gone from the server -- without this the app went blank.
+     * Reload once to pick up the new names; a second failure is a real one.
+     */
+    let reloaded = false;
+    try {
+      reloaded = sessionStorage.getItem('enviso_chunk_reload') === '1';
+      if (!reloaded) sessionStorage.setItem('enviso_chunk_reload', '1');
+    } catch {
+      reloaded = true; // no storage means no way to stop a reload loop
+    }
+    if (!reloaded) location.reload();
+    throw error;
+  });
+const ContentContainer = lazy(loadContentContainer);
 
 export default function App() {
   const {t, apiKey, keyLoading} = useSettings();
@@ -268,6 +293,13 @@ export default function App() {
     setResolved(null);
     if (inputRef.current) inputRef.current.value = '';
   };
+
+  // Choosing a mode is the signal that a generation is coming.
+  useEffect(() => {
+    if (!apiKey || !mode) return;
+    prefetchSdk();
+    void loadContentContainer().catch(() => {});
+  }, [apiKey, mode]);
 
   const refreshHistory = () => {
     void listHistory().then(setHistory);
@@ -609,6 +641,7 @@ export default function App() {
 
       <section className="output">
         {source ? (
+          <Suspense fallback={null}>
           <ContentContainer
             key={reloadCounter}
             source={source}
@@ -624,6 +657,7 @@ export default function App() {
             }
             onLoadingStateChange={setContentLoading}
           />
+          </Suspense>
         ) : (
           <div className="output-placeholder">
             {mode === 'video' ? (

@@ -4,14 +4,47 @@
  */
 
 import {storage} from '@/lib/telegram';
-import {
+import type {
   FinishReason,
-  type GenerateContentConfig,
-  GoogleGenAI,
-  type Part,
+  GenerateContentConfig,
+  Part,
 } from '@google/genai';
 
 const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta';
+
+/**
+ * The Gemini SDK, fetched the first time something is generated.
+ *
+ * It is about two-thirds of the app's JavaScript, and nobody needs it to read
+ * the home screen, the key screen or their history -- only to generate. Left
+ * in the main bundle it made every first open in Telegram wait for code that
+ * might never run. A failed load is forgotten so the next attempt retries.
+ */
+let sdk: Promise<typeof import('@google/genai')> | null = null;
+
+function loadSdk() {
+  sdk ??= import('@google/genai').catch((error) => {
+    sdk = null;
+    throw error;
+  });
+  return sdk;
+}
+
+/**
+ * Start fetching the SDK while the user is still pasting a link, so Generate
+ * never waits on it. Idle time only; a failure here is retried on real use.
+ */
+export function prefetchSdk() {
+  const later =
+    (globalThis as {requestIdleCallback?: (fn: () => void) => void})
+      .requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 1500));
+  later(() => void loadSdk().catch(() => {}));
+}
+
+async function client(apiKey: string) {
+  const {GoogleGenAI} = await loadSdk();
+  return new GoogleGenAI({apiKey});
+}
 
 /**
  * Last-resort model ids, used only if the model list cannot be fetched.
@@ -510,12 +543,14 @@ function checkCandidate(response: {
   if (!candidate) {
     throw new Error('The model returned no output. Try again.');
   }
-  const reason = candidate.finishReason;
-  if (reason && reason !== FinishReason.STOP) {
-    if (reason === FinishReason.SAFETY) {
+  // Compared as strings so this module needs only the SDK's types, not the
+  // SDK itself, which loads later.
+  const reason = candidate.finishReason as string | undefined;
+  if (reason && reason !== 'STOP') {
+    if (reason === 'SAFETY') {
       throw new Error('Response blocked by safety settings.');
     }
-    if (reason === FinishReason.MAX_TOKENS) {
+    if (reason === 'MAX_TOKENS') {
       throw new Error(
         'The app was too long to finish. Try a shorter video or simplify the plan.',
       );
@@ -529,7 +564,7 @@ export async function generateText(options: GenerateOptions): Promise<string> {
   const {apiKey, modelName, prompt, attachments, temperature = 0.75} = options;
   if (!apiKey) throw new AuthError('Gemini API key is missing');
 
-  const ai = new GoogleGenAI({apiKey});
+  const ai = await client(apiKey);
 
   try {
     const response = await ai.models.generateContent({
@@ -567,7 +602,7 @@ export async function generateTextStream(
   } = options;
   if (!apiKey) throw new AuthError('Gemini API key is missing');
 
-  const ai = new GoogleGenAI({apiKey});
+  const ai = await client(apiKey);
 
   // Each attempt starts from nothing, so a stream that dies halfway cannot
   // leave half a document glued to the front of the next model's output.
