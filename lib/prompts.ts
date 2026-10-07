@@ -179,6 +179,7 @@ WHAT TO PUT IN THE SPEC
 - Every screen region, what it contains, and how it is laid out on a narrow phone screen.
 - Every control: what it is, what it does, what changes when it is used.
 - The rules: any formula, scoring, validation or state machine, written out precisely enough to implement without guessing.
+- Faithfulness to how the thing really works. When the picture shows a causal chain -- a pathway, a process, a circuit, a sequence of steps -- a simulated quantity changes only at the step that actually causes it, in the order and direction the picture shows. A blood pressure that rises before the hormone that raises it exists teaches the wrong thing. Where the picture is ambiguous, follow established fact.
 - The starting state. Give real, plausible seed content so the app is alive the moment it opens rather than an empty shell -- if the picture contains actual values, labels or numbers, carry them across as the initial data.
 
 DO NOT ask for photographs or external images of any kind. Everything the app shows must be drawable in the browser: CSS shapes, inline SVG, the Canvas API, emoji, or coloured type. If the source pictures a coffee cup, the app draws one or shows an emoji; it never loads a photograph of one.`;
